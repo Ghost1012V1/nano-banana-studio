@@ -1,217 +1,86 @@
 
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { 
-  ArrowPathIcon, 
-  SparklesIcon,
-  PhotoIcon,
-  PaintBrushIcon,
-  SunIcon,
-  MoonIcon,
-  CameraIcon,
-  LightBulbIcon,
-  RocketLaunchIcon,
-  BriefcaseIcon,
-  Squares2X2Icon,
-  CodeBracketIcon,
-  DocumentDuplicateIcon,
-  CheckIcon,
-  LanguageIcon,
-  AdjustmentsHorizontalIcon,
-  TrashIcon
-} from '@heroicons/react/24/outline';
+
+// Inline SVG Icons for maximum reliability without external dependencies
+const Icons = {
+  Sparkles: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.456-2.455L18 2.25l.259 1.036a3.375 3.375 0 002.455 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.455z" /></svg>,
+  Sun: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M3 12h2.25m.386-6.364l1.591 1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M3 12h2.25m.386-6.364l1.591 1.591M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>,
+  Moon: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 12.845a9.933 9.933 0 01-4.087 1.258 9.75 9.75 0 01-14.748-9.923 9.967 9.967 0 001.558 4.59 9.75 9.75 0 0013.277 4.075z" /></svg>,
+  Trash: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>,
+  Photo: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-24 h-24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>,
+  Download: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+};
 
 const CATEGORIES = {
-  cinematic: {
-    label: "Fotorealismus & Cinematic",
-    icon: <CameraIcon className="w-4 h-4" />,
+  style: {
+    label: "Stil",
     options: [
       { id: 'none', name: 'Standard', modifier: '' },
-      { id: 'photo', name: 'Photorealistic', modifier: 'photorealistic professional photography, 8k resolution' },
-      { id: 'cine_light', name: 'Cinematic lighting', modifier: 'cinematic lighting, dramatic shadows' },
-      { id: 'film_still', name: 'Film still look', modifier: '35mm movie still, cinematic film grain' },
-      { id: 'studio', name: 'Studio photography', modifier: 'professional studio lighting, clean backdrop' }
+      { id: 'photo', name: 'Fotorealistisch', modifier: 'photorealistic, highly detailed' },
+      { id: '3d', name: '3D Render', modifier: 'unreal engine 5 render, octan render, 3d style' },
+      { id: 'anime', name: 'Anime', modifier: 'high quality anime art style' }
     ]
   },
-  illustration: {
-    label: "Illustration & Art",
-    icon: <PaintBrushIcon className="w-4 h-4" />,
+  mood: {
+    label: "Stimmung",
     options: [
       { id: 'none', name: 'Standard', modifier: '' },
-      { id: 'vector', name: 'Vector illustration', modifier: 'strictly 2D vector art, clean flat shapes' },
-      { id: 'flat', name: 'Flat design', modifier: 'minimalist flat design, no gradients, 2D graphic' },
-      { id: 'watercolor', name: 'Watercolor', modifier: 'strictly traditional watercolor painting, bleeding colors, wet-on-wet technique, paper texture' },
-      { id: 'oil', name: 'Oil painting', modifier: 'strictly classical oil painting, heavy impasto brushstrokes, thick paint texture' },
-      { id: 'digital', name: 'Digital painting', modifier: 'high-end digital art painting, smooth gradients' },
-      { id: 'line', name: 'Line art', modifier: 'pure minimalist line art, ink drawing' },
-      { id: 'hand_drawn', name: 'Hand-drawn', modifier: 'hand-drawn pencil sketch, graphite texture' },
-      { id: 'minimal_illu', name: 'Minimalist illustration', modifier: 'ultra-minimalist modern illustration' }
-    ]
-  },
-  design: {
-    label: "Design & Marke",
-    icon: <BriefcaseIcon className="w-4 h-4" />,
-    options: [
-      { id: 'none', name: 'Standard', modifier: '' },
-      { id: 'luxury', name: 'Luxury', modifier: 'premium luxury branding, elegant' },
-      { id: 'minimalist', name: 'Minimalist', modifier: 'clean minimalist layout' },
-      { id: 'product', name: 'Product visualization', modifier: 'commercial product shot, professional lighting' }
-    ]
-  },
-  lighting: {
-    label: "Licht & Stimmung",
-    icon: <LightBulbIcon className="w-4 h-4" />,
-    options: [
-      { id: 'none', name: 'Standard', modifier: '' },
-      { id: 'dramatic', name: 'Dramatic', modifier: 'dramatic chiaroscuro lighting' },
-      { id: 'golden', name: 'Golden hour', modifier: 'warm golden hour sun' },
-      { id: 'volumetric', name: 'Volumetric', modifier: 'volumetric lighting, god rays' }
-    ]
-  },
-  composition: {
-    label: "Kamera & Komposition",
-    icon: <CameraIcon className="w-4 h-4" />,
-    options: [
-      { id: 'none', name: 'Standard', modifier: '' },
-      { id: 'macro', name: 'Macro shot', modifier: 'macro lens extreme detail' },
-      { id: 'top', name: 'Top view', modifier: 'overhead flat lay view' },
-      { id: 'closeup', name: 'Close-up', modifier: 'tight close-up shot' }
-    ]
-  },
-  special: {
-    label: "Spezial-Looks",
-    icon: <RocketLaunchIcon className="w-4 h-4" />,
-    options: [
-      { id: 'none', name: 'Standard', modifier: '' },
-      { id: 'cyberpunk', name: 'Cyberpunk', modifier: 'cyberpunk aesthetic, neon lights' },
-      { id: 'pixar', name: 'Pixar style', modifier: '3D animation, pixar style, disney style' },
-      { id: 'anime', name: 'Anime style', modifier: 'high detailed anime art' }
+      { id: 'dark', name: 'Düster', modifier: 'dark, moody, cinematic atmosphere' },
+      { id: 'bright', name: 'Hell & Freundlich', modifier: 'bright, cheerful, vibrant colors' },
+      { id: 'neon', name: 'Cyberpunk', modifier: 'neon lights, cyberpunk aesthetic' }
     ]
   }
 };
 
-const ASPECT_RATIOS = [
-  { id: '1:1', name: '1:1 (Quadratisch)' },
-  { id: '16:9', name: '16:9 (Breitbild)' },
-  { id: '9:16', name: '9:16 (Portrait)' }
-];
-
-const FONTS = ['Bebas Neue', 'Roboto', 'Montserrat', 'Playfair Display', 'Pacifico'];
-
 const App: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [prompt, setPrompt] = useState('A flamingo on the beach with a cocktail');
+  const [prompt, setPrompt] = useState('Ein kleiner Affe mit einer Banane im Weltraum');
   const [image, setImage] = useState<string | null>(null);
-  const [lastGenConfig, setLastGenConfig] = useState<any>(null);
-  const [showJson, setShowJson] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [history, setHistory] = useState<{url: string, prompt: string}[]>([]);
   const [loading, setLoading] = useState(false);
   const [aspectRatio, setAspectRatio] = useState('1:1');
-  
-  const [selections, setSelections] = useState({
-    cinematic: 'none',
-    illustration: 'none',
-    design: 'none',
-    lighting: 'none',
-    composition: 'none',
-    special: 'none'
-  });
+  const [selections, setSelections] = useState({ style: 'none', mood: 'none' });
 
   const [brightness, setBrightness] = useState(100);
   const [contrast, setContrast] = useState(100);
   const [saturation, setSaturation] = useState(100);
-  const [rotation, setRotation] = useState(0);
-  const [vignette, setVignette] = useState(0);
-
-  const [overlayText, setOverlayText] = useState('');
-  const [fontSize, setFontSize] = useState(48);
-  const [fontFamily, setFontFamily] = useState('Bebas Neue');
-  const [textColor, setTextColor] = useState('#ffffff');
-  const [textY, setTextY] = useState(50); 
-  const [textX, setTextX] = useState(50);
-  const [isDragging, setIsDragging] = useState(false);
 
   const imageRef = useRef<HTMLImageElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageContainerRef = useRef<HTMLDivElement>(null);
-
-  const resetToStandard = () => {
-    setPrompt('');
-    setImage(null);
-    setSelections({
-      cinematic: 'none',
-      illustration: 'none',
-      design: 'none',
-      lighting: 'none',
-      composition: 'none',
-      special: 'none'
-    });
-    setBrightness(100);
-    setContrast(100);
-    setSaturation(100);
-    setRotation(0);
-    setVignette(0);
-    setOverlayText('');
-  };
 
   const filterStyle = useMemo(() => ({
     filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`,
-    transform: `rotate(${rotation}deg)`,
-    transition: 'filter 0.2s ease, transform 0.3s ease'
-  }), [brightness, contrast, saturation, rotation]);
+    transition: 'filter 0.2s ease'
+  }), [brightness, contrast, saturation]);
 
   const generateImage = async () => {
+    const apiKey = process.env.API_KEY;
     if (!prompt.trim() || loading) return;
+    
     setLoading(true);
-    setShowJson(false);
+
     try {
-      // Nutzt den Key aus dem Environment (Vercel-Safe)
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+      const ai = new GoogleGenAI({ apiKey: apiKey || "" });
       
       const activeModifiers = Object.entries(selections)
         .map(([cat, id]) => (CATEGORIES as any)[cat].options.find((opt: any) => opt.id === id)?.modifier)
         .filter(m => m && m.length > 0);
 
-      // FORCE STYLE LOGIC
-      // Wir packen den Kunststil an den ABSOLUTEN ANFANG des Satzes
-      let artStyle = CATEGORIES.illustration.options.find(o => o.id === selections.illustration)?.modifier || "";
-      let finalPrompt = "";
-      
-      if (artStyle) {
-        finalPrompt = `STRICT ARTISTIC STYLE: ${artStyle}. SUBJECT: ${prompt}. `;
-      } else {
-        finalPrompt = prompt;
-      }
-
-      if (activeModifiers.length > 0) {
-        finalPrompt += ` Additional details: ${activeModifiers.join(', ')}.`;
-      }
+      const finalPrompt = `${prompt}. Style: ${activeModifiers.join(', ')}`;
       
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: { parts: [{ text: finalPrompt }] },
-        config: { 
-          imageConfig: { aspectRatio: aspectRatio as any },
-          systemInstruction: "You are a specialized image generator. When a specific art style like 'Watercolor' or 'Oil Painting' is requested, you must ignore your default photographic style and strictly render in that artistic medium. Make the style obvious and unmistakable."
-        }
+        config: { imageConfig: { aspectRatio: aspectRatio as any } }
       });
 
-      let generatedUrl = '';
-      for (const part of response.candidates?.[0]?.content?.parts || []) {
-        if (part.inlineData) {
-          generatedUrl = `data:image/png;base64,${part.inlineData.data}`;
-          break;
-        }
+      const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
+      if (part?.inlineData) {
+        setImage(`data:image/png;base64,${part.inlineData.data}`);
+      } else {
+        throw new Error("Kein Bild erhalten.");
       }
-      if (generatedUrl) {
-        setHistory(prev => [{ url: generatedUrl, prompt }, ...prev].slice(0, 12));
-        setImage(generatedUrl);
-        setLastGenConfig({ prompt: finalPrompt, aspectRatio });
-      }
-    } catch (error) { 
-      console.error(error);
-      alert("Fehler bei der Generierung. Prüfe den API-Key."); 
+    } catch (error: any) { 
+      alert("Fehler: " + (error.message || "API-Key prüfen.")); 
     } finally { 
       setLoading(false); 
     }
@@ -222,133 +91,98 @@ const App: React.FC = () => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const img = imageRef.current;
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    canvas.width = imageRef.current.naturalWidth;
+    canvas.height = imageRef.current.naturalHeight;
     ctx.filter = filterStyle.filter;
-    ctx.drawImage(img, 0, 0);
-    if (overlayText) {
-      ctx.fillStyle = textColor;
-      ctx.font = `${fontSize * (canvas.width / 1000)}px ${fontFamily}`;
-      ctx.textAlign = 'center';
-      ctx.fillText(overlayText, (textX / 100) * canvas.width, (textY / 100) * canvas.height);
-    }
+    ctx.drawImage(imageRef.current, 0, 0);
     const link = document.createElement('a');
     link.download = 'nano-banana.png';
-    link.href = canvas.toDataURL('image/png');
+    link.href = canvas.toDataURL();
     link.click();
   };
 
   return (
     <div className={`min-h-screen flex flex-col md:flex-row ${isDarkMode ? 'bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-      <aside className={`w-full md:w-80 lg:w-96 glass p-6 flex flex-col space-y-6 border-r overflow-y-auto max-h-screen custom-scrollbar ${isDarkMode ? 'border-slate-800' : 'border-slate-300'}`}>
+      <aside className={`w-full md:w-80 glass p-6 flex flex-col space-y-6 border-r overflow-y-auto ${isDarkMode ? 'border-slate-800' : 'border-slate-300'}`}>
         <div className="flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <SparklesIcon className="w-6 h-6 text-yellow-400" />
-            <h1 className="text-xl font-bold">Nano Banana</h1>
+          <div className="flex items-center space-x-2 text-yellow-400">
+            <Icons.Sparkles />
+            <h1 className="text-xl font-black">NANO BANANA</h1>
           </div>
           <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 rounded-lg bg-slate-800 text-yellow-400">
-            {isDarkMode ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
+            {isDarkMode ? <Icons.Sun /> : <Icons.Moon />}
           </button>
         </div>
 
         <div className="space-y-4">
-          <label className="text-xs font-black uppercase text-slate-500">Master Prompt</label>
+          <label className="text-[10px] font-black uppercase text-slate-500">Prompt</label>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-sm outline-none focus:ring-2 focus:ring-yellow-400/50 min-h-[100px]"
+            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm outline-none focus:ring-2 focus:ring-yellow-400/50 min-h-[100px]"
           />
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-xs font-black uppercase text-slate-500 border-b border-slate-800 pb-2">Styles & Effekte</h2>
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase flex items-center gap-2"><Squares2X2Icon className="w-4 h-4" /> Bildformat</label>
-            <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs font-bold">
-              {ASPECT_RATIOS.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-            </select>
-          </div>
+          <label className="text-[10px] font-black uppercase text-slate-500">Format</label>
+          <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
+            <option value="1:1">1:1 Quadrat</option>
+            <option value="16:9">16:9 Breitbild</option>
+            <option value="9:16">9:16 Portrait</option>
+          </select>
+
           {Object.entries(CATEGORIES).map(([key, cat]) => (
             <div key={key} className="space-y-2">
-              <label className="text-[10px] font-black uppercase flex items-center gap-2">{cat.icon} {cat.label}</label>
-              <select value={(selections as any)[key]} onChange={(e) => setSelections(prev => ({...prev, [key]: e.target.value}))} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs font-bold">
+              <label className="text-[10px] font-black uppercase text-slate-500">{cat.label}</label>
+              <select 
+                value={(selections as any)[key]} 
+                onChange={(e) => setSelections(prev => ({...prev, [key]: e.target.value}))} 
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm"
+              >
                 {cat.options.map(opt => <option key={opt.id} value={opt.id}>{opt.name}</option>)}
               </select>
             </div>
           ))}
         </div>
 
-        <div className="pt-4 mt-auto border-t border-slate-800 space-y-4">
-          <button onClick={generateImage} disabled={loading || !prompt.trim()} className="w-full py-4 bg-yellow-400 text-slate-950 rounded-2xl font-black shadow-xl disabled:bg-slate-700">
-            {loading ? "Wird generiert..." : "Render Vision"}
-          </button>
-          <button onClick={resetToStandard} className="w-full py-2 text-xs font-black text-red-400 bg-slate-800 rounded-xl flex items-center justify-center gap-2">
-            <TrashIcon className="w-4 h-4" /> Leeren (Standard)
-          </button>
-        </div>
+        <button 
+          onClick={generateImage} 
+          disabled={loading} 
+          className="w-full py-4 bg-yellow-400 hover:bg-yellow-300 text-slate-950 rounded-xl font-black shadow-lg disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+        >
+          {loading ? "MALT..." : "BILD GENERIEREN"}
+        </button>
       </aside>
 
-      <main className="flex-1 p-6 lg:p-12 overflow-y-auto custom-scrollbar bg-slate-900/50">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div className="relative glass rounded-[2.5rem] overflow-hidden min-h-[500px] flex items-center justify-center border border-slate-800 shadow-2xl">
+      <main className="flex-1 p-6 flex items-center justify-center overflow-hidden">
+        <div className="w-full max-w-2xl">
+          <div className="glass rounded-3xl overflow-hidden min-h-[300px] flex items-center justify-center border border-slate-800 relative">
             {loading ? (
-              <div className="text-center">
-                <div className="w-16 h-16 border-4 border-t-yellow-400 border-yellow-400/20 rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-slate-400 font-medium">KI mischt Farben...</p>
-              </div>
+              <div className="text-center animate-pulse text-yellow-400 font-black">GENERIERUNG...</div>
             ) : image ? (
-              <div ref={imageContainerRef} className="relative p-8 w-full flex flex-col items-center">
-                <img ref={imageRef} src={image} style={filterStyle} className="max-w-full max-h-[65vh] rounded-2xl shadow-2xl" alt="Preview" />
-                {overlayText && (
-                  <div className="absolute text-center cursor-move select-none" style={{ left: `${textX}%`, top: `${textY}%`, fontFamily, fontSize: `${fontSize}px`, color: textColor, transform: 'translate(-50%, -50%)', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
-                    {overlayText}
-                  </div>
-                )}
-              </div>
+              <img ref={imageRef} src={image} style={filterStyle} className="max-w-full max-h-[80vh] shadow-2xl" alt="AI Gen" />
             ) : (
-              <div className="text-center p-12 opacity-40">
-                <PhotoIcon className="w-20 h-20 text-slate-600 mx-auto mb-4" />
-                <h3 className="text-xl font-black">Bereit für deine Kreation</h3>
-              </div>
+              <div className="opacity-20"><Icons.Photo /></div>
             )}
           </div>
 
           {image && !loading && (
-            <div className="space-y-6 animate-in fade-in duration-500">
-              <div className="glass rounded-3xl p-6 border border-slate-800 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-500">Belichtung</label>
-                  <input type="range" min="50" max="150" value={brightness} onChange={e=>setBrightness(parseInt(e.target.value))} className="w-full accent-yellow-400" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-500">Kontrast</label>
-                  <input type="range" min="50" max="150" value={contrast} onChange={e=>setContrast(parseInt(e.target.value))} className="w-full accent-yellow-400" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-slate-500">Sättigung</label>
-                  <input type="range" min="0" max="200" value={saturation} onChange={e=>setSaturation(parseInt(e.target.value))} className="w-full accent-yellow-400" />
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-4">
-                <button onClick={handleDownload} className="flex-1 py-3 bg-emerald-600 text-white rounded-2xl text-xs font-black shadow-lg">Download</button>
-                <button onClick={() => setShowJson(!showJson)} className="py-3 px-6 bg-slate-800 rounded-2xl text-xs font-black"><CodeBracketIcon className="w-5 h-5" /></button>
-              </div>
-
-              {showJson && (
-                <pre className="p-6 bg-black rounded-2xl text-yellow-400 text-xs font-mono overflow-auto max-h-40">
-                  {JSON.stringify(lastGenConfig, null, 2)}
-                </pre>
-              )}
-            </div>
-          )}
-
-          {history.length > 0 && (
-            <div className="grid grid-cols-4 md:grid-cols-6 gap-3 pt-8 border-t border-slate-800">
-              {history.map((h, i) => (
-                <img key={i} src={h.url} onClick={() => setImage(h.url)} className="aspect-square object-cover rounded-xl cursor-pointer hover:ring-2 hover:ring-yellow-400 transition-all" />
-              ))}
+            <div className="mt-6 space-y-4 glass p-4 rounded-2xl border border-slate-800">
+               <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold">Helligkeit</label>
+                    <input type="range" min="50" max="150" value={brightness} onChange={e=>setBrightness(Number(e.target.value))} className="w-full accent-yellow-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold">Kontrast</label>
+                    <input type="range" min="50" max="150" value={contrast} onChange={e=>setContrast(Number(e.target.value))} className="w-full accent-yellow-400" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold">Sättigung</label>
+                    <input type="range" min="0" max="200" value={saturation} onChange={e=>setSaturation(Number(e.target.value))} className="w-full accent-yellow-400" />
+                  </div>
+               </div>
+               <button onClick={handleDownload} className="w-full py-3 bg-emerald-500 text-slate-950 font-black rounded-xl">DOWNLOAD</button>
             </div>
           )}
         </div>
