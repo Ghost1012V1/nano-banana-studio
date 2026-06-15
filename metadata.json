@@ -1,5 +1,5 @@
 {
-  "name": "Nano Banana - AI Image Studio",
-  "description": "A high-performance image generation and editing suite powered by Gemini 2.5 Flash Image, allowing users to create and modify images via natural language prompts.",
+  "name": "Feldwerk Agrar Agent",
+  "description": "Ein übersichtlicher Agrar-Assistent für Rechnungen, Spritzfenster, Fristen und Maschinenwartung.",
   "requestFramePermissions": []
 }
