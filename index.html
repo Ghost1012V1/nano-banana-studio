@@ -1,132 +1,80 @@
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nano Banana Studio</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & Babel for in-browser JSX transformation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script type="importmap">
-    {
-      "imports": {
-        "@google/genai": "https://esm.sh/@google/genai@1.3.0",
-        "react": "https://esm.sh/react@19.0.0",
-        "react-dom": "https://esm.sh/react-dom@19.0.0",
-        "react-dom/client": "https://esm.sh/react-dom@19.0.0/client"
-      }
-    }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        body { background-color: #0f172a; color: #f8fafc; margin: 0; padding: 0; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
-        #root { height: 100vh; width: 100vw; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Feldwerk – Agrar Agent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="importmap">{"imports":{"react":"https://esm.sh/react@19.0.0","react-dom/client":"https://esm.sh/react-dom@19.0.0/client","lucide-react":"https://esm.sh/lucide-react@0.468.0"}}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box} body{margin:0;background:#f4f5f0;color:#17231b;font-family:"DM Sans",sans-serif}
+    h1,h2,h3,.display{font-family:"Manrope",sans-serif}.card{background:#fff;border:1px solid #e4e7df;box-shadow:0 1px 2px rgba(25,45,30,.04)}
+    .navbtn{transition:.2s}.navbtn:hover{background:#eef2eb;color:#275b37}.navbtn.active{background:#e1ede3;color:#1e6034}
+    button{transition:.2s}button:hover{transform:translateY(-1px)}.bar{background:linear-gradient(90deg,#2d7041 var(--w),#e9ece6 var(--w))}
+    @media(max-width:900px){.side{display:none}.mobile-nav{display:flex!important}.shell{padding-bottom:84px}}
+  </style>
 </head>
 <body>
-    <div id="root"></div>
+<div id="root"></div>
+<script type="text/babel" data-type="module">
+  import React,{useState} from "react";
+  import {createRoot} from "react-dom/client";
+  import {LayoutGrid,ReceiptText,CloudSun,CalendarClock,Tractor,Settings,HelpCircle,Bell,Camera,ArrowRight,Wind,CloudRain,ThermometerSun,Check,Clock3,MoreHorizontal,Plus,ChevronRight,Wrench,Fuel,Gauge,ScanLine,X,MapPin,Leaf} from "lucide-react";
 
-    <script type="text/babel" data-type="module">
-        import React, { useState, useRef, useMemo } from 'react';
-        import { createRoot } from 'react-dom/client';
-        import { GoogleGenAI } from "@google/genai";
+  const IconBox=({children,tone="green"})=><div className={`w-11 h-11 rounded-xl flex items-center justify-center ${tone==="green"?"bg-[#e5f0e6] text-[#28643a]":tone==="amber"?"bg-[#fff1d8] text-[#9a6114]":"bg-[#e7edf3] text-[#466177]"}`}>{children}</div>;
+  const Pill=({children,tone="green"})=><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${tone==="green"?"bg-[#e3f2e6] text-[#26633a]":tone==="amber"?"bg-[#fff0d5] text-[#9a6114]":"bg-[#edf0ec] text-[#607064]"}`}>{children}</span>;
+  const Card=({children,className=""})=><section className={`card rounded-2xl ${className}`}>{children}</section>;
+  const nav=[["Übersicht",LayoutGrid],["Rechnungen",ReceiptText],["Wetter",CloudSun],["Fristen",CalendarClock],["Maschinen",Tractor]];
+  const deadlines=[{d:"03",m:"JUL",title:"PSM-Aufzeichnungen prüfen",sub:"Laufende Dokumentation · innerhalb von 3 Tagen",tone:"amber"},{d:"01",m:"OKT",title:"Düngeverbot auf Ackerflächen",sub:"Leichtlösliche Stickstoffdünger",tone:"green"},{d:"15",m:"OKT",title:"Vollständiges Ausbringungsverbot",sub:"Ohne Folge- oder Zwischenfrucht",tone:"green"}];
+  const machines=[{name:"Steyr 4115",type:"Traktor · W-183 AB",hours:"1.492 Std.",service:"Service in 8 Std.",tone:"amber",pct:"92%"},{name:"John Deere 6155R",type:"Traktor · W-221 CD",hours:"2.108 Std.",service:"Service in 142 Std.",tone:"green",pct:"42%"},{name:"Pöttinger Novacat",type:"Mähwerk · FW-042",hours:"486 Std.",service:"Alles in Ordnung",tone:"green",pct:"24%"}];
 
-        const Icons = {
-          Sparkles: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>,
-          Sun: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M3 12h2.25m.386-6.364l1.591 1.591M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>,
-          Moon: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 12.845a9.933 9.933 0 01-4.087 1.258 9.75 9.75 0 01-14.748-9.923 9.967 9.967 0 001.558 4.59 9.75 9.75 0 0013.277 4.075z" /></svg>,
-          Photo: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-24 h-24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
-        };
-
-        const App = () => {
-          const [isDarkMode, setIsDarkMode] = useState(true);
-          const [prompt, setPrompt] = useState('Ein kleiner Affe mit einer Banane im Weltraum');
-          const [image, setImage] = useState(null);
-          const [loading, setLoading] = useState(false);
-          const [aspectRatio, setAspectRatio] = useState('1:1');
-          
-          const [brightness, setBrightness] = useState(100);
-          const [contrast, setContrast] = useState(100);
-          const [saturation, setSaturation] = useState(100);
-          const imageRef = useRef(null);
-
-          const generateImage = async () => {
-            const apiKey = "process.env.API_KEY"; // Placeholder for auto-injection
-            if (!prompt.trim() || loading) return;
-            setLoading(true);
-            try {
-              const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-              const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash-image',
-                contents: { parts: [{ text: prompt }] },
-                config: { imageConfig: { aspectRatio } }
-              });
-              const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
-              if (part?.inlineData) setImage(`data:image/png;base64,${part.inlineData.data}`);
-            } catch (e) { alert("Fehler: " + e.message); }
-            finally { setLoading(false); }
-          };
-
-          const handleDownload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = imageRef.current.naturalWidth;
-            canvas.height = imageRef.current.naturalHeight;
-            ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
-            ctx.drawImage(imageRef.current, 0, 0);
-            const link = document.createElement('a');
-            link.download = 'nano-banana.png';
-            link.href = canvas.toDataURL();
-            link.click();
-          };
-
-          return (
-            <div className={`h-screen flex flex-col md:flex-row ${isDarkMode ? 'bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-              <aside className="w-full md:w-80 glass p-6 flex flex-col space-y-6 border-r border-slate-800">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-2 text-yellow-400 font-black"><Icons.Sparkles /> <span>NANO BANANA</span></div>
-                  <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 rounded bg-slate-800 text-yellow-400">
-                    {isDarkMode ? <Icons.Sun /> : <Icons.Moon />}
-                  </button>
-                </div>
-                <textarea value={prompt} onChange={e => setPrompt(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm min-h-[100px] outline-none focus:ring-2 focus:ring-yellow-400" />
-                <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
-                  <option value="1:1">1:1 Quadrat</option>
-                  <option value="16:9">16:9 Breitbild</option>
-                  <option value="9:16">9:16 Portrait</option>
-                </select>
-                <button onClick={generateImage} disabled={loading} className="w-full py-4 bg-yellow-400 text-slate-950 rounded-xl font-black disabled:opacity-50">
-                  {loading ? "MALT..." : "BILD GENERIEREN"}
-                </button>
-              </aside>
-              <main className="flex-1 p-6 flex items-center justify-center relative">
-                <div className="w-full max-w-2xl text-center">
-                  <div className="glass rounded-3xl min-h-[300px] flex items-center justify-center overflow-hidden">
-                    {loading ? <div className="text-yellow-400 font-black animate-pulse">GENERIERUNG...</div> : 
-                     image ? <img ref={imageRef} src={image} style={{filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`}} className="max-w-full max-h-[70vh] shadow-2xl" /> : 
-                     <div className="opacity-20"><Icons.Photo /></div>}
-                  </div>
-                  {image && !loading && (
-                    <div className="mt-4 p-4 glass rounded-xl space-y-4">
-                      <div className="grid grid-cols-3 gap-2 text-[10px] font-bold">
-                        <div>Hell: <input type="range" min="50" max="150" value={brightness} onChange={e=>setBrightness(e.target.value)} className="w-full accent-yellow-400" /></div>
-                        <div>Kontr: <input type="range" min="50" max="150" value={contrast} onChange={e=>setContrast(e.target.value)} className="w-full accent-yellow-400" /></div>
-                        <div>Sätt: <input type="range" min="0" max="200" value={saturation} onChange={e=>setSaturation(e.target.value)} className="w-full accent-yellow-400" /></div>
-                      </div>
-                      <button onClick={handleDownload} className="w-full py-2 bg-emerald-500 text-slate-950 font-black rounded-lg text-xs">BILD SPEICHERN</button>
-                    </div>
-                  )}
-                </div>
-              </main>
-            </div>
-          );
-        };
-
-        const root = createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+  function App(){
+    const [active,setActive]=useState("Übersicht"),[done,setDone]=useState([]),[saved,setSaved]=useState(false),[showAdd,setShowAdd]=useState(false);
+    return <div className="min-h-screen flex shell">
+      <aside className="side fixed inset-y-0 left-0 w-[244px] bg-[#fafbf8] border-r border-[#e1e5de] p-5 flex flex-col z-20">
+        <div className="flex items-center gap-3 px-2 mb-9"><div className="w-10 h-10 rounded-xl bg-[#28643a] text-white flex items-center justify-center"><Leaf size={22}/></div><div><div className="display font-extrabold text-lg">Feldwerk</div><div className="text-[10px] tracking-[.18em] font-bold text-[#7b887e]">AGRAR AGENT</div></div></div>
+        <nav className="space-y-1">{nav.map(([n,I])=><button onClick={()=>setActive(n)} className={`navbtn active:${active===n} w-full rounded-xl px-3 py-2.5 flex items-center gap-3 text-sm font-semibold ${active===n?"active":"text-[#657168]"}`}><I size={18}/>{n}</button>)}</nav>
+        <div className="mt-auto space-y-1"><button className="navbtn w-full rounded-xl px-3 py-2.5 flex items-center gap-3 text-sm font-semibold text-[#657168]"><HelpCircle size={18}/>Hilfe</button><button className="navbtn w-full rounded-xl px-3 py-2.5 flex items-center gap-3 text-sm font-semibold text-[#657168]"><Settings size={18}/>Einstellungen</button><div className="border-t border-[#e1e5de] mt-3 pt-4 flex items-center gap-3 px-2"><div className="w-9 h-9 bg-[#d9e8d9] rounded-full flex items-center justify-center text-sm font-bold text-[#28643a]">JM</div><div><div className="text-sm font-bold">Josef Maier</div><div className="text-[11px] text-[#78847a]">Hof Maier · Steiermark</div></div></div></div>
+      </aside>
+      <main className="ml-[244px] max-[900px]:ml-0 flex-1">
+        <header className="h-[76px] bg-[#fafbf8]/90 backdrop-blur border-b border-[#e1e5de] flex items-center justify-between px-8 max-sm:px-4 sticky top-0 z-10"><div className="flex items-center gap-2 text-sm text-[#718075]"><MapPin size={16}/>Hof Maier, Steiermark</div><div className="flex items-center gap-3"><div className="hidden sm:flex items-center gap-2 text-xs font-bold text-[#4a6651] bg-[#edf3ec] rounded-full px-3 py-1.5"><span className="w-2 h-2 rounded-full bg-[#58a369]"></span>Alle Systeme bereit</div><button className="relative w-10 h-10 rounded-xl border border-[#e1e5de] flex items-center justify-center bg-white"><Bell size={18}/><span className="absolute top-2 right-2 w-2 h-2 bg-[#dc8f2e] rounded-full border border-white"></span></button></div></header>
+        <div className="max-w-[1240px] mx-auto p-8 max-sm:p-4">
+          <div className="mb-7"><p className="text-sm font-semibold text-[#718075] mb-2">Montag, 15. Juni</p><h1 className="text-3xl max-sm:text-2xl font-extrabold tracking-[-.04em]">Grüß Gott, Josef.</h1><p className="text-[#68766b] mt-1">Das ist heute auf Ihrem Hof wichtig.</p></div>
+          <div className="grid grid-cols-12 gap-5">
+            <Card className="col-span-12 lg:col-span-7 overflow-hidden">
+              <div className="p-6 border-b border-[#e7eae4] flex justify-between items-start"><div className="flex gap-3"><IconBox><CloudSun size={22}/></IconBox><div><p className="text-xs font-bold tracking-wider text-[#78857b]">SPRITZFENSTER · HEUTE</p><h2 className="text-xl font-extrabold mt-1">Heute spritzen?</h2></div></div><Pill tone="green"><Check size={13}/>Aktuell</Pill></div>
+              <div className="p-6"><div className="rounded-2xl bg-[#eaf4e9] border border-[#d4e8d5] p-5 flex max-sm:flex-col gap-4 items-center justify-between"><div><div className="flex items-center gap-3"><div className="w-11 h-11 rounded-full bg-[#2e7142] text-white flex items-center justify-center"><Check size={24}/></div><div><div className="text-2xl font-extrabold display text-[#245e36]">Ja, jetzt ist ein gutes Fenster.</div><p className="text-sm text-[#57705c] mt-1">Bedingungen bleiben bis etwa 15:00 Uhr stabil.</p></div></div></div><button className="bg-white border border-[#cfe0d0] text-[#28643a] rounded-xl px-4 py-2.5 text-sm font-bold whitespace-nowrap">Details <ChevronRight size={15} className="inline"/></button></div>
+                <div className="grid grid-cols-3 mt-5 divide-x divide-[#e4e8e1]"><div className="text-center px-2"><Wind size={20} className="mx-auto text-[#567260] mb-2"/><b className="display text-lg">7 km/h</b><p className="text-xs text-[#77847a]">Wind</p></div><div className="text-center px-2"><CloudRain size={20} className="mx-auto text-[#567260] mb-2"/><b className="display text-lg">10 %</b><p className="text-xs text-[#77847a]">Regen</p></div><div className="text-center px-2"><ThermometerSun size={20} className="mx-auto text-[#567260] mb-2"/><b className="display text-lg">19 °C</b><p className="text-xs text-[#77847a]">Temperatur</p></div></div>
+              </div>
+            </Card>
+            <Card className="col-span-12 lg:col-span-5 p-6 flex flex-col">
+              <div className="flex justify-between"><div className="flex gap-3"><IconBox tone="amber"><ReceiptText size={22}/></IconBox><div><p className="text-xs font-bold tracking-wider text-[#78857b]">FOTO-RECHNUNG</p><h2 className="text-xl font-extrabold mt-1">Rechnung erfassen</h2></div></div><Pill>3 Schritte</Pill></div>
+              {!saved?<div className="flex-1 mt-5 rounded-2xl border border-dashed border-[#bdc8bd] bg-[#f8f9f6] flex flex-col items-center justify-center p-6 text-center"><button onClick={()=>setSaved(true)} className="w-14 h-14 rounded-full bg-[#28643a] text-white flex items-center justify-center shadow-lg shadow-green-900/15"><Camera size={25}/></button><b className="mt-3">Foto aufnehmen</b><p className="text-xs text-[#78847a] mt-1">Betrag, Lieferant und Datum werden erkannt.</p></div>:<div className="flex-1 mt-5 rounded-2xl bg-[#f1f5ef] p-5"><Pill><Check size={13}/>Gespeichert</Pill><h3 className="font-bold mt-4">Lagerhaus Graz</h3><p className="text-2xl font-extrabold display mt-1">€ 428,60</p><p className="text-xs text-[#77847a] mt-1">15. Juni 2026</p><button onClick={()=>setSaved(false)} className="mt-4 text-sm font-bold text-[#28643a]">Neue Rechnung aufnehmen</button></div>}
+            </Card>
+            <Card className="col-span-12 lg:col-span-7">
+              <div className="p-6 pb-4 flex items-center justify-between"><div className="flex gap-3"><IconBox tone="slate"><CalendarClock size={22}/></IconBox><div><p className="text-xs font-bold tracking-wider text-[#78857b]">NÄCHSTE FRISTEN</p><h2 className="text-xl font-extrabold mt-1">Was als Nächstes ansteht</h2></div></div><button className="text-sm font-bold text-[#316943]">Alle Fristen <ArrowRight size={15} className="inline ml-1"/></button></div>
+              <div className="px-6 pb-4">{deadlines.map((x,i)=><div className={`flex items-center gap-4 py-4 border-t border-[#edf0eb] ${done.includes(i)?"opacity-40":""}`}><div className="w-12 text-center"><b className="display text-xl">{x.d}</b><div className="text-[10px] font-bold tracking-widest text-[#89948b]">{x.m}</div></div><div className={`w-1 self-stretch rounded-full ${x.tone==="amber"?"bg-[#dda44e]":"bg-[#7baa81]"}`}></div><div className="flex-1"><b className="text-sm">{x.title}</b><p className="text-xs text-[#7b877d] mt-1">{x.sub}</p></div><button onClick={()=>setDone([...done,i])} className="rounded-xl border border-[#dfe4dc] bg-[#fafbf9] px-3 py-2 text-xs font-bold text-[#526259]"><Check size={14} className="inline mr-1"/>Erledigt</button></div>)}</div>
+            </Card>
+            <Card className="col-span-12 lg:col-span-5 p-6 bg-[#264e34] !border-[#264e34] text-white relative overflow-hidden">
+              <div className="absolute -right-12 -bottom-14 w-52 h-52 rounded-full border-[30px] border-white/5"></div><div className="flex items-center justify-between relative"><div className="flex gap-3 items-center"><div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center"><Wrench size={21}/></div><div><p className="text-xs font-bold tracking-wider text-white/60">WARTUNGSHINWEIS</p><h2 className="text-lg font-extrabold mt-1">Steyr 4115</h2></div></div><MoreHorizontal/></div>
+              <div className="relative mt-8"><Pill tone="amber"><Clock3 size={13}/>Bald fällig</Pill><h3 className="text-2xl font-extrabold mt-4 leading-tight">Service jetzt –<br/>in 8 Std. fällig.</h3><p className="text-sm text-white/60 mt-2">Nächster Service bei 1.500 Betriebsstunden.</p><button className="mt-6 rounded-xl bg-white text-[#264e34] px-4 py-2.5 text-sm font-bold">Wartung planen <ArrowRight size={15} className="inline ml-1"/></button></div>
+            </Card>
+            <Card className="col-span-12 overflow-hidden">
+              <div className="p-6 flex max-sm:flex-col gap-4 justify-between"><div className="flex gap-3"><IconBox><Tractor size={22}/></IconBox><div><p className="text-xs font-bold tracking-wider text-[#78857b]">FUHRPARK</p><h2 className="text-xl font-extrabold mt-1">Maschinen auf einen Blick</h2></div></div><button onClick={()=>setShowAdd(true)} className="bg-[#28643a] text-white rounded-xl px-4 py-2.5 text-sm font-bold"><Plus size={16} className="inline mr-1"/>Maschine hinzufügen</button></div>
+              <div className="grid md:grid-cols-3 border-t border-[#e7eae4] divide-x divide-[#e7eae4]">{machines.map(m=><div className="p-5"><div className="flex justify-between"><div><b>{m.name}</b><p className="text-xs text-[#829086] mt-1">{m.type}</p></div><span className={`w-2.5 h-2.5 rounded-full mt-1 ${m.tone==="amber"?"bg-[#d99b39]":"bg-[#4b9a60]"}`}></span></div><div className="flex gap-5 mt-5 text-xs"><span className="text-[#758279]"><Gauge size={14} className="inline mr-1"/>{m.hours}</span><span className="text-[#758279]"><Fuel size={14} className="inline mr-1"/>Normal</span></div><div className="h-1.5 rounded-full bar mt-4" style={{"--w":m.pct}}></div><p className={`text-xs font-bold mt-2 ${m.tone==="amber"?"text-[#a56a15]":"text-[#3f7c4e]"}`}>{m.service}</p></div>)}</div>
+            </Card>
+          </div>
+        </div>
+      </main>
+      <nav className="mobile-nav hidden fixed bottom-0 inset-x-0 h-[70px] bg-white border-t border-[#dfe4dc] z-30 justify-around items-center">{nav.slice(0,5).map(([n,I])=><button onClick={()=>setActive(n)} className={`text-[10px] font-bold flex flex-col items-center gap-1 ${active===n?"text-[#28643a]":"text-[#78847a]"}`}><I size={19}/>{n}</button>)}</nav>
+      {showAdd&&<div className="fixed inset-0 bg-[#17231b]/45 z-40 flex items-center justify-center p-4"><div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-2xl"><div className="flex justify-between"><div><p className="text-xs font-bold tracking-wider text-[#78857b]">SCHRITT 1 VON 3</p><h2 className="text-2xl font-extrabold mt-1">Neue Maschine</h2></div><button onClick={()=>setShowAdd(false)}><X/></button></div><div className="mt-6 rounded-2xl bg-[#edf4ec] p-6 text-center"><ScanLine size={38} className="mx-auto text-[#28643a]"/><b className="block mt-3">QR-Code scannen</b><p className="text-xs text-[#718075] mt-1">Maschinendaten werden automatisch übernommen.</p></div><div className="flex items-center gap-3 my-5"><div className="h-px bg-[#e4e8e1] flex-1"></div><span className="text-xs text-[#829086]">oder</span><div className="h-px bg-[#e4e8e1] flex-1"></div></div><button onClick={()=>setShowAdd(false)} className="w-full rounded-xl border border-[#dfe4dc] py-3 text-sm font-bold">Daten manuell eingeben</button></div></div>}
+    </div>
+  }
+  createRoot(document.getElementById("root")).render(<App/>);
+</script>
 </body>
 </html>
