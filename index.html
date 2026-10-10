@@ -1,132 +1,207 @@
-
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nano Banana Studio</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & Babel for in-browser JSX transformation -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script type="importmap">
-    {
-      "imports": {
-        "@google/genai": "https://esm.sh/@google/genai@1.3.0",
-        "react": "https://esm.sh/react@19.0.0",
-        "react-dom": "https://esm.sh/react-dom@19.0.0",
-        "react-dom/client": "https://esm.sh/react-dom@19.0.0/client"
-      }
-    }
-    </script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>Angebots- & Positionsrechner</title>
     <style>
-        body { background-color: #0f172a; color: #f8fafc; margin: 0; padding: 0; font-family: 'Inter', sans-serif; height: 100vh; overflow: hidden; }
-        #root { height: 100vh; width: 100vw; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        :root { color-scheme: light; --blue: #2563eb; --dark: #0f172a; --muted: #64748b; --line: #e2e8f0; --bg: #f1f5f9; }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: linear-gradient(135deg, #f8fafc, #dbeafe); color: var(--dark); }
+        button, input, textarea { font: inherit; }
+        .page { min-height: 100vh; padding: 24px; }
+        .wrap { max-width: 1180px; margin: 0 auto; }
+        .hero { display: flex; justify-content: space-between; gap: 24px; align-items: center; margin-bottom: 24px; padding: 28px; border-radius: 28px; background: var(--dark); color: white; box-shadow: 0 24px 60px rgba(15, 23, 42, .25); }
+        .eyebrow { margin: 0 0 8px; color: #93c5fd; font-size: 12px; font-weight: 800; letter-spacing: .24em; text-transform: uppercase; }
+        h1 { margin: 0; font-size: clamp(30px, 5vw, 54px); line-height: 1; }
+        .hero p:last-child { margin-bottom: 0; color: #cbd5e1; }
+        .grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 24px; align-items: start; }
+        .card { background: rgba(255,255,255,.94); border: 1px solid white; border-radius: 28px; padding: 22px; box-shadow: 0 18px 45px rgba(15, 23, 42, .12); }
+        .field-grid { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 14px; }
+        label span { display: block; margin-bottom: 6px; color: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+        input, textarea { width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: white; color: var(--dark); outline: none; }
+        input:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 4px rgba(37,99,235,.14); }
+        textarea { min-height: 90px; resize: vertical; }
+        .table-wrap { margin-top: 22px; overflow-x: auto; }
+        table { width: 100%; min-width: 850px; border-collapse: separate; border-spacing: 0 10px; }
+        th { padding: 0 10px 6px; color: var(--muted); font-size: 11px; text-align: left; text-transform: uppercase; letter-spacing: .08em; }
+        td { padding: 10px; background: #f8fafc; vertical-align: middle; }
+        td:first-child { border-radius: 16px 0 0 16px; }
+        td:last-child { border-radius: 0 16px 16px 0; }
+        td input { padding: 8px; border-radius: 10px; }
+        .text-right { text-align: right; }
+        .sum { font-weight: 900; white-space: nowrap; }
+        .actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+        .btn { border: 0; border-radius: 16px; padding: 12px 16px; cursor: pointer; font-weight: 900; }
+        .btn-primary { background: var(--blue); color: white; box-shadow: 0 12px 25px rgba(37,99,235,.28); }
+        .btn-secondary { background: white; color: #1d4ed8; border: 2px dashed #93c5fd; }
+        .btn-danger { background: transparent; color: #dc2626; padding: 8px 10px; }
+        .side { display: grid; gap: 24px; }
+        .calc h2, .overview h2 { margin: 0 0 16px; }
+        .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .totals { margin-top: 20px; display: grid; gap: 12px; }
+        .row { display: flex; justify-content: space-between; gap: 16px; }
+        .row strong { white-space: nowrap; }
+        .discount { color: #ea580c; }
+        .grand { margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--line); color: #1d4ed8; font-size: 24px; font-weight: 900; }
+        .overview { background: var(--dark); color: white; }
+        .overview p { color: #cbd5e1; }
+        .hint { padding: 14px; border-radius: 16px; background: rgba(37,99,235,.2); color: #dbeafe !important; }
+        .note { margin-top: 20px; }
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .field-grid { grid-template-columns: 1fr; } .hero { align-items: flex-start; flex-direction: column; } }
+        @media print { body { background: white; } .page { padding: 0; } .no-print { display: none !important; } .card, .hero { box-shadow: none; border: 0; } .grid { grid-template-columns: 1fr; } .side { page-break-inside: avoid; } }
     </style>
 </head>
 <body>
-    <div id="root"></div>
-
-    <script type="text/babel" data-type="module">
-        import React, { useState, useRef, useMemo } from 'react';
-        import { createRoot } from 'react-dom/client';
-        import { GoogleGenAI } from "@google/genai";
-
-        const Icons = {
-          Sparkles: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" /></svg>,
-          Sun: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M3 12h2.25m.386-6.364l1.591 1.591M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>,
-          Moon: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 12.845a9.933 9.933 0 01-4.087 1.258 9.75 9.75 0 01-14.748-9.923 9.967 9.967 0 001.558 4.59 9.75 9.75 0 0013.277 4.075z" /></svg>,
-          Photo: () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-24 h-24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
-        };
-
-        const App = () => {
-          const [isDarkMode, setIsDarkMode] = useState(true);
-          const [prompt, setPrompt] = useState('Ein kleiner Affe mit einer Banane im Weltraum');
-          const [image, setImage] = useState(null);
-          const [loading, setLoading] = useState(false);
-          const [aspectRatio, setAspectRatio] = useState('1:1');
-          
-          const [brightness, setBrightness] = useState(100);
-          const [contrast, setContrast] = useState(100);
-          const [saturation, setSaturation] = useState(100);
-          const imageRef = useRef(null);
-
-          const generateImage = async () => {
-            const apiKey = "process.env.API_KEY"; // Placeholder for auto-injection
-            if (!prompt.trim() || loading) return;
-            setLoading(true);
-            try {
-              const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-              const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash-image',
-                contents: { parts: [{ text: prompt }] },
-                config: { imageConfig: { aspectRatio } }
-              });
-              const part = response.candidates?.[0]?.content?.parts.find(p => p.inlineData);
-              if (part?.inlineData) setImage(`data:image/png;base64,${part.inlineData.data}`);
-            } catch (e) { alert("Fehler: " + e.message); }
-            finally { setLoading(false); }
-          };
-
-          const handleDownload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.width = imageRef.current.naturalWidth;
-            canvas.height = imageRef.current.naturalHeight;
-            ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`;
-            ctx.drawImage(imageRef.current, 0, 0);
-            const link = document.createElement('a');
-            link.download = 'nano-banana.png';
-            link.href = canvas.toDataURL();
-            link.click();
-          };
-
-          return (
-            <div className={`h-screen flex flex-col md:flex-row ${isDarkMode ? 'bg-[#0f172a] text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
-              <aside className="w-full md:w-80 glass p-6 flex flex-col space-y-6 border-r border-slate-800">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center space-x-2 text-yellow-400 font-black"><Icons.Sparkles /> <span>NANO BANANA</span></div>
-                  <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 rounded bg-slate-800 text-yellow-400">
-                    {isDarkMode ? <Icons.Sun /> : <Icons.Moon />}
-                  </button>
+    <div class="page">
+        <div class="wrap">
+            <header class="hero">
+                <div>
+                    <p class="eyebrow">Business Toolkit</p>
+                    <h1>Angebots- & Positionsrechner</h1>
+                    <p>Kalkuliere Positionen, Rabatte, Mehrwertsteuer und Gesamtbeträge direkt im Browser.</p>
                 </div>
-                <textarea value={prompt} onChange={e => setPrompt(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm min-h-[100px] outline-none focus:ring-2 focus:ring-yellow-400" />
-                <select value={aspectRatio} onChange={e => setAspectRatio(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm">
-                  <option value="1:1">1:1 Quadrat</option>
-                  <option value="16:9">16:9 Breitbild</option>
-                  <option value="9:16">9:16 Portrait</option>
-                </select>
-                <button onClick={generateImage} disabled={loading} className="w-full py-4 bg-yellow-400 text-slate-950 rounded-xl font-black disabled:opacity-50">
-                  {loading ? "MALT..." : "BILD GENERIEREN"}
-                </button>
-              </aside>
-              <main className="flex-1 p-6 flex items-center justify-center relative">
-                <div className="w-full max-w-2xl text-center">
-                  <div className="glass rounded-3xl min-h-[300px] flex items-center justify-center overflow-hidden">
-                    {loading ? <div className="text-yellow-400 font-black animate-pulse">GENERIERUNG...</div> : 
-                     image ? <img ref={imageRef} src={image} style={{filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`}} className="max-w-full max-h-[70vh] shadow-2xl" /> : 
-                     <div className="opacity-20"><Icons.Photo /></div>}
-                  </div>
-                  {image && !loading && (
-                    <div className="mt-4 p-4 glass rounded-xl space-y-4">
-                      <div className="grid grid-cols-3 gap-2 text-[10px] font-bold">
-                        <div>Hell: <input type="range" min="50" max="150" value={brightness} onChange={e=>setBrightness(e.target.value)} className="w-full accent-yellow-400" /></div>
-                        <div>Kontr: <input type="range" min="50" max="150" value={contrast} onChange={e=>setContrast(e.target.value)} className="w-full accent-yellow-400" /></div>
-                        <div>Sätt: <input type="range" min="0" max="200" value={saturation} onChange={e=>setSaturation(e.target.value)} className="w-full accent-yellow-400" /></div>
-                      </div>
-                      <button onClick={handleDownload} className="w-full py-2 bg-emerald-500 text-slate-950 font-black rounded-lg text-xs">BILD SPEICHERN</button>
+                <button class="btn btn-primary no-print" id="printButton" type="button">Drucken / PDF</button>
+            </header>
+
+            <main class="grid">
+                <section class="card">
+                    <div class="field-grid">
+                        <label><span>Angebotsnummer</span><input id="offerNumber" value="ANG-2026-001"></label>
+                        <label><span>Kunde</span><input id="customer" value="Musterkunde GmbH"></label>
+                        <label><span>Gültig bis</span><input id="validUntil" type="date" value="2026-07-31"></label>
                     </div>
-                  )}
-                </div>
-              </main>
-            </div>
-          );
-        };
 
-        const root = createRoot(document.getElementById('root'));
-        root.render(<App />);
+                    <div class="table-wrap">
+                        <table aria-label="Positionsrechner">
+                            <thead>
+                                <tr>
+                                    <th>Position</th><th>Menge</th><th>Einheit</th><th>Einzelpreis</th><th>Rabatt %</th><th class="text-right">Summe netto</th><th class="no-print"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemsBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="actions no-print">
+                        <button class="btn btn-secondary" id="addItem" type="button">+ Position hinzufügen</button>
+                    </div>
+
+                    <label class="note"><span>Anmerkung / Zahlungsbedingungen</span><textarea id="note">Vielen Dank für Ihre Anfrage. Dieses Angebot ist freibleibend und gemäß Gültigkeitsdatum bindend.</textarea></label>
+                </section>
+
+                <aside class="side">
+                    <section class="card calc">
+                        <h2>Kalkulation</h2>
+                        <div class="two">
+                            <label><span>Gesamtrabatt %</span><input id="globalDiscount" type="number" min="0" max="100" step="0.1" value="0"></label>
+                            <label><span>MwSt. %</span><input id="taxRate" type="number" min="0" step="0.1" value="19"></label>
+                        </div>
+                        <div class="totals">
+                            <div class="row"><span>Positionen netto</span><strong id="positionsSubtotal">0,00 €</strong></div>
+                            <div class="row discount"><span id="discountLabel">Gesamtrabatt (0,0 %)</span><strong id="globalDiscountAmount">− 0,00 €</strong></div>
+                            <div class="row"><span>Zwischensumme netto</span><strong id="netTotal">0,00 €</strong></div>
+                            <div class="row"><span>MwSt.</span><strong id="taxAmount">0,00 €</strong></div>
+                            <div class="row grand"><span>Gesamt</span><strong id="grandTotal">0,00 €</strong></div>
+                        </div>
+                    </section>
+
+                    <section class="card overview">
+                        <h2>Angebotsübersicht</h2>
+                        <p><span id="summaryNumber">ANG-2026-001</span> für <strong id="summaryCustomer">Musterkunde GmbH</strong></p>
+                        <p>Gültig bis: <strong id="summaryDate">2026-07-31</strong></p>
+                        <p class="hint">Tipp: Nutze „Drucken / PDF“, um das fertige Angebot als PDF auszugeben oder zu drucken.</p>
+                    </section>
+                </aside>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const eur = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+        const pct = new Intl.NumberFormat('de-DE', { style: 'percent', minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        const numberValue = value => Number.parseFloat(String(value).replace(',', '.')) || 0;
+
+        let nextItemId = 4;
+        let items = [
+            { id: 1, name: 'Beratung & Konzeption', quantity: 4, unit: 'Std.', unitPrice: 85, discount: 0 },
+            { id: 2, name: 'Umsetzung / Entwicklung', quantity: 12, unit: 'Std.', unitPrice: 95, discount: 5 },
+            { id: 3, name: 'Projektpauschale', quantity: 1, unit: 'Pauschal', unitPrice: 250, discount: 0 }
+        ];
+
+        const $ = id => document.getElementById(id);
+
+        function renderItems() {
+            $('itemsBody').innerHTML = items.map((item, index) => `
+                <tr>
+                    <td><input aria-label="Positionsname ${index + 1}" data-id="${item.id}" data-field="name" value="${escapeHtml(item.name)}"></td>
+                    <td><input aria-label="Menge ${index + 1}" data-id="${item.id}" data-field="quantity" type="number" min="0" step="0.01" value="${item.quantity}"></td>
+                    <td><input aria-label="Einheit ${index + 1}" data-id="${item.id}" data-field="unit" value="${escapeHtml(item.unit)}"></td>
+                    <td><input aria-label="Einzelpreis ${index + 1}" data-id="${item.id}" data-field="unitPrice" type="number" min="0" step="0.01" value="${item.unitPrice}"></td>
+                    <td><input aria-label="Rabatt ${index + 1}" data-id="${item.id}" data-field="discount" type="number" min="0" max="100" step="0.1" value="${item.discount}"></td>
+                    <td class="sum text-right" id="lineTotal-${item.id}">0,00 €</td>
+                    <td class="no-print text-right"><button class="btn btn-danger" data-remove="${item.id}" type="button">Entfernen</button></td>
+                </tr>
+            `).join('');
+            calculate();
+        }
+
+        function calculate() {
+            let positionsSubtotal = 0;
+            items.forEach(item => {
+                const grossLine = numberValue(item.quantity) * numberValue(item.unitPrice);
+                const lineDiscount = grossLine * (numberValue(item.discount) / 100);
+                const netLine = grossLine - lineDiscount;
+                positionsSubtotal += netLine;
+                const totalCell = $(`lineTotal-${item.id}`);
+                if (totalCell) totalCell.textContent = eur.format(netLine);
+            });
+
+            const globalDiscountRate = numberValue($('globalDiscount').value) / 100;
+            const globalDiscountAmount = positionsSubtotal * globalDiscountRate;
+            const net = positionsSubtotal - globalDiscountAmount;
+            const tax = net * (numberValue($('taxRate').value) / 100);
+            const total = net + tax;
+
+            $('positionsSubtotal').textContent = eur.format(positionsSubtotal);
+            $('discountLabel').textContent = `Gesamtrabatt (${pct.format(globalDiscountRate)})`;
+            $('globalDiscountAmount').textContent = `− ${eur.format(globalDiscountAmount)}`;
+            $('netTotal').textContent = eur.format(net);
+            $('taxAmount').textContent = eur.format(tax);
+            $('grandTotal').textContent = eur.format(total);
+            $('summaryNumber').textContent = $('offerNumber').value || '—';
+            $('summaryCustomer').textContent = $('customer').value || '—';
+            $('summaryDate').textContent = $('validUntil').value || '—';
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[char]));
+        }
+
+        document.addEventListener('input', event => {
+            const field = event.target.dataset.field;
+            const id = Number(event.target.dataset.id);
+            if (field && id) {
+                items = items.map(item => item.id === id ? { ...item, [field]: event.target.value } : item);
+            }
+            calculate();
+        });
+
+        document.addEventListener('click', event => {
+            const removeId = Number(event.target.dataset.remove);
+            if (removeId && items.length > 1) {
+                items = items.filter(item => item.id !== removeId);
+                renderItems();
+            }
+        });
+
+        $('addItem').addEventListener('click', () => {
+            items.push({ id: nextItemId++, name: 'Neue Position', quantity: 1, unit: 'Stk.', unitPrice: 0, discount: 0 });
+            renderItems();
+        });
+        $('printButton').addEventListener('click', () => window.print());
+
+        renderItems();
     </script>
 </body>
 </html>
